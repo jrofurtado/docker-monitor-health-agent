@@ -5,8 +5,8 @@ const dockerApiVersion = process.env.DOCKER_API_VERSION
 const collectStats = 'true' == process.env.COLLECT_STATS
 const appName = process.env.APP_NAME
 const monitoringHost = process.env.MONITORING_HOST
-const delay = process.env.MONITORING_DELAY
-console.log(delay)
+const monitoringPath = process.env.MONITORING_PATH
+const delay = 1000*process.env.MONITORING_DELAY
 
 function executeDockerService (path, callback) {
   let fullPath = '/'+dockerApiVersion+'/'+path
@@ -31,7 +31,7 @@ function executeDockerService (path, callback) {
 
 function errorCallback (error) {
   console.log(error)
-  system.exit(1)
+  process.exit(1)
 }
 
 function executeDockerHealth (containers, callback) {
@@ -67,12 +67,15 @@ function saveExpires (message) {
 }
 
 function sendMessage (message) {
-  let request = https.request({ method: 'POST', host: monitoringHost, port: '443', path: '/api/message', headers: {'Content-Type': 'application/json', 'Content-Length': message.length}}, (res) => {
+  let str = JSON.stringify(message);
+  let len = Buffer.byteLength(str);
+  let request = https.request({ method: 'POST', host: monitoringHost, port: '443', path: monitoringPath, headers: {'Content-Type': 'application/json', 'Content-Length': len}}, (res) => {
     if (res.statusCode != 200) {
-      errorCallback('Error sending message to https://'host+'/api/message: http status code is '+res.statusCode)
+      errorCallback('Error sending message to https://'+monitoringHost+monitoringPath+': http status code is '+res.statusCode)
     }
-    saveExpires()
+    saveExpires(message)
   })
+  request.write(str,encoding='utf8')
   request.end()
 }
 
