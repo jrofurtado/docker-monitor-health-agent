@@ -1,12 +1,20 @@
 const http = require('http')
-const https = require('https')
 const fs = require('fs')
+const url = require('url')
+
+const key = process.env.KEY
 const dockerApiVersion = process.env.DOCKER_API_VERSION
 const collectStats = 'true' == process.env.COLLECT_STATS
 const appName = process.env.APP_NAME
-const monitoringHost = process.env.MONITORING_HOST
-const monitoringPath = process.env.MONITORING_PATH
-const delay = 1000*process.env.MONITORING_DELAY
+const monitoringUrl = process.env.MONITORING_URL
+const monitoringDelay = 1000*process.env.MONITORING_DELAY
+
+let adapterFor = (function() {
+  let adapters = {'http:': require('http'), 'https:': require('https')}
+  return function(inputUrl) {
+    return adapters[url.parse(inputUrl).protocol]
+  }
+}())
 
 function executeDockerService (path, callback) {
   let fullPath = '/'+dockerApiVersion+'/'+path
@@ -67,13 +75,13 @@ function saveExpires (message) {
 }
 
 function sendMessage (message) {
-  let str = JSON.stringify(message);
-  let len = Buffer.byteLength(str);
-  let request = https.request({ method: 'POST', host: monitoringHost, port: '443', path: monitoringPath, headers: {'Content-Type': 'application/json', 'Content-Length': len}}, (res) => {
+  let str = JSON.stringify(message)
+  let len = Buffer.byteLength(str)
+  let myUrl = url.parse(monitoringUrl, true)
+  let request = adapterFor(myUrl).request({ method: 'POST', host: myUrl.hostname, port: myUrl.port, path: myUrl.path, headers: {'Content-Type': 'application/json', 'Content-Length': len}}, (res) => {
     if (res.statusCode != 200) {
-      errorCallback('Error sending message to https://'+monitoringHost+monitoringPath+': http status code is '+res.statusCode)
+      errorCallback('Error sending message to '+monitoringUrl+': http status code is '+res.statusCode)
     }
-    saveExpires(message)
   })
   request.write(str,encoding='utf8')
   request.end()
@@ -81,8 +89,8 @@ function sendMessage (message) {
 
 function doWork () {
   let now = new Date()
-  let expires = new Date(now.getTime() + (delay*2))
-  let message = {app: appName, createdTimestamp: now.getTime(), created: now.toISOString(), expiresTimestamp:expires.getTime(), expires: expires.toISOString()}
+  let expires = new Date(now.getTime() + (monitoringDelay*2))
+  let message = {key:key, appName: appName, createdTimestamp: now.getTime(), created: now.toISOString(), expiresTimestamp:expires.getTime(), expires: expires.toISOString()}
   executeDockerService ('containers/json?all=true}', (data) => {
     message.containers = data
     executeDockerHealth(message.containers, () => {
