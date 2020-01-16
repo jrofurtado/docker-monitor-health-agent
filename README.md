@@ -1,5 +1,5 @@
 # docker-monitor-health-agent
-Docker agent to collect health status of docker containers and send them to centralized monitoring running docker-monitor-health-server
+Docker agent to collect health status of docker containers and send them to centralized monitoring running jrofurtado/docker-monitor-health-server
 
 *docker-compose.yml*
 ~~~~
