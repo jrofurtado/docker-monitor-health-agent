@@ -9,6 +9,7 @@ agent:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      - KEY="fab4d210-69db-11ea-8339-811ba1916331"
       - DOCKER_API_VERSION=v1.40
       - APP_NAME=myapp
       - COLLECT_STATS=false
@@ -18,7 +19,7 @@ agent:
 
 # Environment variables
 
-* KEY - App key you get when adding the App to the central monitoring container running docker-monitor-health-server
+* KEY - App key you get when adding the Application to the central monitoring container running docker-monitor-health-server
 * DOCKER_API_VERSION default "v1.40" - Docker API version
 * APP_NAME default "undefined" - Application name
 * COLLECT_STATS default "false" - Also collect docker stats like cpu and memory for each container
