@@ -81,6 +81,8 @@ function sendMessage (message) {
   let request = adapterFor(myUrl).request({ method: 'POST', host: myUrl.hostname, port: myUrl.port, path: myUrl.path, headers: {'Content-Type': 'application/json', 'Content-Length': len}}, (res) => {
     if (res.statusCode != 200) {
       errorCallback('Error sending message to '+monitoringUrl+': http status code is '+res.statusCode)
+    } else {
+      saveExpires(message)
     }
   })
   request.write(str,encoding='utf8')
